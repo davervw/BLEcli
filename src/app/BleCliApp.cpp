@@ -24,11 +24,12 @@ void BleCliApp::pumpSerial() {
       continue;
     }
 
-    if (ch == '\b' || ch == 0x7F) {
+    if (ch == '\b') {
       if (inputBuffer_.length() > 0) {
         inputBuffer_.remove(inputBuffer_.length() - 1);
-        Serial.print("\b \b");
-      }
+        Serial.print(" \b");
+      } else
+        Serial.print(" ");
       continue;
     }
 
