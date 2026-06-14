@@ -11,6 +11,8 @@ struct BleDeviceRecord {
   String name;
   int rssi = 0;
   bool connectable = false;
+  bool hid = false;
+  uint16_t appearance = 0;
 };
 
 class Esp32BleBackend {

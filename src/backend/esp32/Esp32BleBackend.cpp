@@ -326,6 +326,8 @@ void Esp32BleBackend::handleScanResult(const NimBLEAdvertisedDevice* advertisedD
     return;
   }
 
+  bool isAdvertisingHID = advertisedDevice->haveServiceUUID() && advertisedDevice->isAdvertisingService(NimBLEUUID((uint16_t)0x1812));
+
   String address = advertisedDevice->getAddress().toString().c_str();
   uint8_t addressType = advertisedDevice->getAddressType();
   String name = advertisedDevice->haveName() ? advertisedDevice->getName().c_str() : String("<unnamed>");
@@ -339,6 +341,8 @@ void Esp32BleBackend::handleScanResult(const NimBLEAdvertisedDevice* advertisedD
       devices_[i].connectable = connectable;
       devices_[i].addressType = addressType;
       devices_[i].index = static_cast<int>(i);
+      devices_[i].appearance = advertisedDevice->haveAppearance() ? advertisedDevice->getAppearance() : 0;
+      devices_[i].hid = isAdvertisingHID;
       return;
     }
   }

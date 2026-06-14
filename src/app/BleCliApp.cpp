@@ -235,6 +235,16 @@ void BleCliApp::printDevices() const {
     Serial.print(d.name);
     Serial.print(" RSSI=");
     Serial.print(d.rssi);
+    if (d.hid)
+      Serial.print(" HID");
+    if (d.appearance == 0x3c0)
+      Serial.print(" Generic");
+    else if (d.appearance == 0x3c1)
+      Serial.print(" Keyboard");
+    else if (d.appearance == 0x3c4)
+      Serial.print(" GamePad");
+    else if (d.appearance != 0)
+      Serial.printf(" %04x", d.appearance);
     Serial.print(" ");
     Serial.println(d.connectable ? "conn" : "no-conn");
   }
