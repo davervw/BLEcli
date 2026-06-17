@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 #include <vector>
+#include <atomic>
 
 struct BleDeviceRecord {
   int index = -1;
@@ -89,4 +90,6 @@ private:
 
   ScanCallbacks scanCallbacks_;
   ClientCallbacks clientCallbacks_;
+  // Prevent concurrent re-entry of handleNotify
+  std::atomic_flag notifyLock_ = ATOMIC_FLAG_INIT;
 };

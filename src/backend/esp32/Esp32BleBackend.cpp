@@ -392,6 +392,19 @@ void Esp32BleBackend::handleNotify(NimBLERemoteCharacteristic* characteristic, u
     return;
   }
 
+  // Prevent concurrent re-entry from other notify callbacks.
+  if (notifyLock_.test_and_set(std::memory_order_acquire)) {
+    // Another handleNotify is in progress; skip this one.
+    return;
+  }
+
+  // RAII guard to ensure the lock is released on exit.
+  struct NotifyLockGuard {
+    std::atomic_flag& flag;
+    NotifyLockGuard(std::atomic_flag& f) : flag(f) {}
+    ~NotifyLockGuard() { flag.clear(std::memory_order_release); }
+  } guard(notifyLock_);
+
   String raw = HidProfile::formatHex(data, length);
   String key = String(characteristic->getHandle());
   key += ":";
