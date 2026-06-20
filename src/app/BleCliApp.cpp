@@ -1,6 +1,9 @@
 #include "BleCliApp.h"
 
+#include <Arduino.h>
+#ifdef M5STACK
 #include <M5Unified.h>
+#endif
 
 void BleCliApp::begin() {
   session_.reset();
@@ -288,7 +291,9 @@ void BleCliApp::selectDeviceArg(const String& arg) {
 
 void BleCliApp::rebootDevice() {
   Serial.println("Rebooting...");
+#ifdef M5STACK
   M5.Display.fillScreen(TFT_BLACK);
+#endif  
   delay(1500);
   ESP.restart();
 }
