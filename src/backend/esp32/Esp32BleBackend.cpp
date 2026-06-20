@@ -25,8 +25,8 @@ bool Esp32BleBackend::begin() {
 
   NimBLEScan* scan = NimBLEDevice::getScan();
   scan->setScanCallbacks(&scanCallbacks_, false);
-  scan->setInterval(100);
-  scan->setWindow(100);
+  scan->setInterval(160);
+  scan->setWindow(158);
   scan->setActiveScan(true);
   return true;
 }
