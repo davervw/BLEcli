@@ -141,6 +141,8 @@ bool Esp32BleBackend::subscribeHidInput() {
   lastNotifyMs_ = 0;
 
   NimBLERemoteService* hid = client_->getService(NimBLEUUID((uint16_t)0x1812));
+  if (hid == nullptr)
+    hid = client_->getService(NimBLEUUID("65da11f8-dc46-4cd6-bdc9-ba862c4634f5"));
   if (hid == nullptr) {
     Serial.println("HID service not found.");
     return false;
@@ -155,8 +157,9 @@ bool Esp32BleBackend::subscribeHidInput() {
 
     uint8_t reportId = 0;
     const bool isBootKeyboard = chr->getUUID().equals(NimBLEUUID((uint16_t)0x2A22));
+    const bool isCbmKeyboard = chr->getUUID().equals(NimBLEUUID("1652b589-a0cc-4319-87fd-d80ccbd668f0"));
     const bool isInputReport = isHidInputReportCharacteristic(chr, &reportId);
-    if (!isBootKeyboard && !isInputReport) {
+    if (!isBootKeyboard && !isCbmKeyboard && !isInputReport) {
       continue;
     }
 
@@ -202,8 +205,10 @@ String Esp32BleBackend::dumpHidReports() {
   }
 
   NimBLERemoteService* hid = client_->getService(NimBLEUUID((uint16_t)0x1812));
+  if (hid == nullptr)
+    hid = client_->getService(NimBLEUUID("65da11f8-dc46-4cd6-bdc9-ba862c4634f5"));
   if (hid == nullptr) {
-    return "HID service not found.";
+    return "HID service not found.\n";
   }
 
   String out;
@@ -216,6 +221,7 @@ String Esp32BleBackend::dumpHidReports() {
     uint8_t reportId = 0;
     bool isInput = isHidInputReportCharacteristic(chr, &reportId);
     const bool isBootKeyboard = chr->getUUID().equals(NimBLEUUID((uint16_t)0x2A22));
+    const bool isCbmKeyboard = chr->getUUID().equals(NimBLEUUID("1652b589-a0cc-4319-87fd-d80ccbd668f0"));
 
     out += "handle=";
     out += String(chr->getHandle());
@@ -235,6 +241,8 @@ String Esp32BleBackend::dumpHidReports() {
     } else {
       out += " type=other";
     }
+    if (isCbmKeyboard)
+      out += " CBM";
     out += "\n";
   }
 
@@ -247,8 +255,10 @@ String Esp32BleBackend::dumpHidCharacteristics() {
   }
 
   NimBLERemoteService* hid = client_->getService(NimBLEUUID((uint16_t)0x1812));
+  if (hid == nullptr)
+    hid = client_->getService(NimBLEUUID("65da11f8-dc46-4cd6-bdc9-ba862c4634f5"));
   if (hid == nullptr) {
-    return "HID service not found.";
+    return "HID service not found.\n";
   }
 
   String out;
@@ -311,6 +321,12 @@ String Esp32BleBackend::serviceSummary() const {
   } else {
     out += " HID=off";
   }
+  
+  NimBLERemoteService* custom = client_->getService(NimBLEUUID("65da11f8-dc46-4cd6-bdc9-ba862c4634f5"));
+  if (custom != nullptr) {
+    out += " Custom CBM";
+  }
+
   return out;
 }
 
@@ -405,17 +421,24 @@ void Esp32BleBackend::handleNotify(NimBLERemoteCharacteristic* characteristic, u
     ~NotifyLockGuard() { flag.clear(std::memory_order_release); }
   } guard(notifyLock_);
 
+  NimBLEUUID characteristicUUID = characteristic->getUUID();
+  bool isCbmKeyboard = characteristicUUID == NimBLEUUID("1652b589-a0cc-4319-87fd-d80ccbd668f0");
   String raw = HidProfile::formatHex(data, length);
   String key = String(characteristic->getHandle());
   key += ":";
-  key += characteristic->getUUID().toString().c_str();
+  key += characteristicUUID.toString().c_str();
   uint32_t now = millis();
+
   if (!shouldPrintNotification(key, raw, now)) {
     return;
   }
 
-  Serial.print(raw);
-  Serial.println();
+  if (isCbmKeyboard)
+    Serial.print(String(data, length));
+  else {
+    Serial.print(raw);
+    Serial.println();
+  }
 }
 
 bool Esp32BleBackend::isHidInputReportCharacteristic(NimBLERemoteCharacteristic* characteristic, uint8_t* reportIdOut) const {
